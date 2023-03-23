@@ -1,5 +1,18 @@
 # UD-Equity-Metrics
 PW Neighborhood Equity Metrics Dashboard
+
+## Instructions
+* clone repo locally: 
+`git clone https://github.com/PerkinsAndWill/UD-Equity-Metrics.git`
+* navigate to folder,  create python environment, and activate it: :
+    cd UD-Equity_Metrics
+    python3 -m venv ud_env
+    source ud_env/bin/activate
+* install python packages:
+`pip install -r requirements.txt`
+* run streamlit app:
+`streamlit run app/myapp.py`
+
 ## Overview
 ## Team
 ## Metrics
