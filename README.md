@@ -4,11 +4,11 @@ PW Neighborhood Equity Metrics Dashboard
 ## Instructions
 * clone repo locally: 
     ````
-    git clone https://github.com/PerkinsAndWill/UD-Equity-Metrics.git
+    git clone https://github.com/PerkinsAndWill/Urban-Design-Equity-Metrics.git
     ````
 * navigate to folder,  create python environment, and activate it:
     ```
-    cd UD-Equity_Metrics
+    cd Urban-Design-Equity_Metrics
     python3 -m venv ud_env
     source ud_env/bin/activate
     ```
