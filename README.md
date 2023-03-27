@@ -4,11 +4,11 @@ PW Neighborhood Equity Metrics Dashboard
 ## Instructions
 * clone repo locally: 
     ````
-    git clone https://github.com/PerkinsAndWill/UD-Equity-Metrics.git
+    git clone https://github.com/PerkinsAndWill/Urban-Design-Equity-Metrics.git
     ````
 * navigate to folder,  create python environment, and activate it:
     ```
-    cd UD-Equity_Metrics
+    cd Urban-Design-Equity-Metrics
     python3 -m venv ud_env
     source ud_env/bin/activate
     ```
@@ -36,7 +36,6 @@ PW Neighborhood Equity Metrics Dashboard
     
         reference: https://www.census.gov/programs-surveys/geography/technical-documentation/complete-technical-documentation/census-geocoder.html
     - 3.2 Census API to get tables
-         - get FIPS code 
          - get table names
 4. Feature engineering
 5. Area Interpolation
