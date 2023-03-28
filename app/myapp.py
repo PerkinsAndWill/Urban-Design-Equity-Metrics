@@ -3,6 +3,7 @@
 import streamlit as st
 import folium
 import geopandas as gpd
+import pandas as pd
 from utils import create_grid
 from streamlit_folium import folium_static
 import json
@@ -39,6 +40,10 @@ grid_df = create_grid(lat, lng, radius=800, size=200)
 # st.write(grid_df.head())
 
 ########### GET METRICS DATA #################
+# READ SELECTED VARIABLES
+# acs_code_df = pd.read_csv('../data/acs_variable_code.csv')
+
+
 # GET CENSUS DATA
 
 
