@@ -1,5 +1,7 @@
-# UD-Equity-Metrics
+# Urban-Design-Equity-Metrics
 PW Neighborhood Equity Metrics Dashboard
+
+=======
 
 ## Instructions
 * clone repo locally: 
@@ -38,8 +40,8 @@ PW Neighborhood Equity Metrics Dashboard
     - 3.2 Census API to get tables
          - get table names
 4. Feature engineering
-5. Area Interpolation
-6. Visualize on web map
-      - 6.1 streamlit input box
-      - 6.2 streamlit map
-      - 6.4 streamlit download geojson
+  - 4.1 Area Interpolation
+5. Visualize on web map
+      - 5.1 streamlit input box
+      - 5.2 streamlit map
+      - 5.3 streamlit download geojson
