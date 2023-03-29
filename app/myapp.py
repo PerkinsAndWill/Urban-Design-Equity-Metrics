@@ -1,10 +1,8 @@
-
-
 import streamlit as st
 import folium
 import geopandas as gpd
 import pandas as pd
-from utils import create_grid
+from utils import create_grid, get_fips_code
 from streamlit_folium import folium_static
 import json
 
@@ -21,13 +19,13 @@ with st.sidebar:
     st.markdown("#### Input Latitude and Longitude of your Interested Neighborhood")
     lat= st.number_input('Insert Latitude', value=37.78737)
     lng = st.number_input('Insert Longitude', value=-122.39505)
-
-    st.write('The current coordinates is ', lat, lng)
+    state_fips,state_name, county_fips, county_name = get_fips_code(lat, lng)
+    st.write('The current coordinates is ', state_name, ', ', county_name)
 
     options = st.multiselect(
     'Select Metrics',
-    ['Residents', 'Jobs', 'Housing Units', 'Pct_Black or Hispanic Residents', 'Pct_Rent Burdened', 'Pct_Low-Wage Workers', 'Median House Value', 'Porosity', 'Retail Spots', 'Transit Stops'],
-    ['Retail Spots', 'Transit Stops'])
+    ['Total Population', 'Total Jobs (All Workers)', 'Total Housing Units', 'Total Low Income Population', 'Black Population', 'Hispanic or Latino Population', 'Pct_Rent_Burdened', 'Porosity', 'Retail Spots', 'Transit Stops'],
+    ['Total Population', 'Total Housing Units'])
 
     st.write('You selected:', options)
 

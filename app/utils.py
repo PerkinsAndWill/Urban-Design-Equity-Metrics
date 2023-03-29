@@ -4,6 +4,7 @@ import geopandas as gpd
 from shapely import geometry
 # import folium
 import pandas as pd
+import requests
  
 def create_grid(lat=37.78, lng=-122.39, radius=800, size=200):
     # point from lat, lng
@@ -41,3 +42,20 @@ def create_grid(lat=37.78, lng=-122.39, radius=800, size=200):
     grid_gdf = grid_gdf.to_crs('EPSG:4326')
     
     return grid_gdf
+
+
+
+def get_fips_code(lat, lng):
+    url = "https://geo.fcc.gov/api/census/block/find"
+    params = {
+        "latitude": lat,
+        "longitude": lng,
+        "format": "json"
+    }
+    response = requests.get(url, params=params)
+    data = response.json()
+    state_fips = data["State"]["FIPS"]
+    state_name = data["State"]["name"]
+    county_fips = data["County"]["FIPS"]
+    county_name = data["County"]["name"]
+    return state_fips,state_name, county_fips, county_name
