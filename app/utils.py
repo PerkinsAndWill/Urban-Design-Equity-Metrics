@@ -48,14 +48,13 @@ def create_grid(lat=37.78, lng=-122.39, radius=800, size=200):
     fishnet = gpd.GeoDataFrame(geom_array, columns=['geometry']).set_crs(boundary.crs)
     boundary = gpd.GeoDataFrame(boundary)
     boundary = boundary.set_geometry(boundary[0])
-    boundary = boundary.drop([0],axis = 1)
+    boundary = boundary.drop([0],axis = 1)  # NOTE: why are you dropping this?
 
     grid_gdf = fishnet.sjoin(boundary, how = 'inner')
-    grid_gdf = grid_gdf.drop(['index_right'],axis = 1)
+    grid_gdf = grid_gdf.drop(['index_right'],axis = 1) # NOTE: why are you dropping this?
     grid_gdf = grid_gdf.to_crs('EPSG:4326')
     
     return grid_gdf
-
 
 
 def get_fips_code(lat, lng):
@@ -72,3 +71,53 @@ def get_fips_code(lat, lng):
     county_fips = data["County"]["FIPS"]
     county_name = data["County"]["name"]
     return state_fips,state_name, county_fips, county_name
+
+
+def get_county_census_data(state, county, variable_names):
+    """
+    use census API to query the census table
+    query for all block groups in selected county
+
+    Args:
+        state (str): FIPS code of state
+        county (str): FIPS code of county
+        variable_names List(str): table names
+    Returns:
+        Dataframe: census block groups
+    """
+    raise NotImplementedError
+
+
+def census_features(census_df):
+    """
+    Calculate the metrics using the cencus raw data.
+
+    Args:
+        census_df (Dataframe): county blockgroupd dataframe
+    Returns:
+        Dataframe: blockgroups dataframe equity
+    
+    """
+    raise NotImplementedError
+
+
+def enrich_grid(grid_df, blockgroups_df_equity, porosity_df, retail_df, transit_df):
+    """
+    spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
+    area interpolation from blockgroups_df_equity to grid_df to get census_df
+    aggregate points_count by each grid
+    join census_df, porosity_df on grid_id
+    dedupe
+    output equity_grid_df
+
+    Args:
+        grid_df (Dataframe):
+        blockgroups_df_equity
+        porosity_df
+        retail_df
+        transit_df
+    Returns:
+        Dataframe: equity grid dataframe
+    
+    """
+    raise NotImplementedError
