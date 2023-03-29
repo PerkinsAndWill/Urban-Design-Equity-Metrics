@@ -53,7 +53,7 @@ grid_df = create_grid(lat, lng, radius=800, size=200)
 
 ########### DISPLAY MAP ##################
 # Load the GeoJSON file
-geojson_data = json.loads(grid_df.to_json())
+geojson_data = json.loads(grid_df.to_json())  # NOTE: is this necessary?
 # st.write(geojson_data['features'])
 
 # Create a Folium map centered on the first polygon in the GeoJSON data  # NOTE: polygons are centered on map now
