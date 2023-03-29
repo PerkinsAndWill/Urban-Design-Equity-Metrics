@@ -1,1 +1,6 @@
 streamlit==1.20.0
+folium
+streamlit-folium
+shapely
+geopandas
+googlemaps
