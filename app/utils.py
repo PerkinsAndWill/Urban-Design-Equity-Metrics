@@ -21,6 +21,7 @@ def create_grid(lat=37.78, lng=-122.39, radius=800, size=200):
     boundary = boundary.to_crs("EPSG:3857")
     minX, minY, maxX, maxY = boundary.total_bounds
     # Create a fishnet
+    minX, minY = minX - 0.5*grid_size, minY - 0.5*grid_size
     x, y = (minX, minY)
     geom_array = []
 
