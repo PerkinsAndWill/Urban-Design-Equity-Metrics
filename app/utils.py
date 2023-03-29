@@ -7,6 +7,18 @@ import pandas as pd
 import requests
  
 def create_grid(lat=37.78, lng=-122.39, radius=800, size=200):
+    """
+    Generate a radius buffer centered on the lat, lng and fill with a grid of polygons.
+
+    Args:
+        lat (float): latitude of grid center
+        lng (float): longitude of grid center
+        radius: (float) radius around center, defines grid boundaries
+        size (float): cell size of grid
+    Returns:
+        GeoDataFrame: the generated grid
+    """
+
     # point from lat, lng
     df = pd.DataFrame({'lat': [lat], 'lng': [lng]})
     point = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['lng'], df['lat'],crs="EPSG:4326"))
