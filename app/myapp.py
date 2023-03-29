@@ -56,11 +56,14 @@ grid_df = create_grid(lat, lng, radius=800, size=200)
 geojson_data = json.loads(grid_df.to_json())
 # st.write(geojson_data['features'])
 
-# Create a Folium map centered on the first polygon in the GeoJSON data
+# Create a Folium map centered on the first polygon in the GeoJSON data  # NOTE: polygons are centered on map now
 coords = geojson_data['features'][0]['geometry']['coordinates'][0][:-1]
-center_lat = sum(p[1] for p in coords) / len(coords)
-center_lon = sum(p[0] for p in coords) / len(coords)
-m = folium.Map(location=[center_lat, center_lon], zoom_start=14, tiles='CartoDB positron')
+start_lat = sum(p[1] for p in coords) / len(coords)
+start_lon = sum(p[0] for p in coords) / len(coords)
+coords = geojson_data['features'][-1]['geometry']['coordinates'][0][:-1]
+end_lat = sum(p[1] for p in coords) / len(coords)
+end_lon = sum(p[0] for p in coords) / len(coords)
+m = folium.Map(location=[0.5*(start_lat + end_lat), 0.5*(start_lon+end_lon)], zoom_start=14, tiles='CartoDB positron')
 
 # Add the GeoJSON data to the map as a GeoJSON layer
 folium.GeoJson(geojson_data, style_function=lambda feature:{
