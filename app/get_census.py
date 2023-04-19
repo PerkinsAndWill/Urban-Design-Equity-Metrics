@@ -1,5 +1,6 @@
 import pandas as pd
 from census import Census
+import pygris
 from utils import get_fips_code
 
 # Get Variable Code
@@ -29,6 +30,17 @@ def get_file_contents(filename):
         print("'%s' file not found" % filename)
 
 def get_county_census(lat,lng,var_select):
+    """
+    use census API to query the census table
+    query for all block groups in selected county
+
+    Args:
+        state (str): FIPS code of state
+        county (str): FIPS code of county
+        variable_names List(str): table names (e.g.'B01003_001E' for total population)
+    Returns:
+        Dataframe: census block group geometry with corresponding census variables. 
+    """
 
     # read in variable code
     code_list,acs_dict = get_acs_code(var_select,filepath = '../data/acs_variable_code.csv')
@@ -50,10 +62,16 @@ def get_county_census(lat,lng,var_select):
     
     # Feature Engineering, create geoid
     acs_df = pd.DataFrame(sc_census)
-    acs_df['geoid'] = acs_df['state'] + acs_df['county'] + acs_df['tract'] + acs_df['block group']
+    acs_df['GEOID'] = acs_df['state'] + acs_df['county'] + acs_df['tract'] + acs_df['block group']
 
     # rename columns back to metrics name for readability
     inv_acs_dict = {v: k for k, v in acs_dict.items()}
     acs_df = acs_df.rename(columns=inv_acs_dict, inplace=True)
+    county_tiger = pygris.block_groups(state = state_fips, county = county_fips, cache = True, year = 2019)
 
-    return acs_df
+    acs_gdf = acs_df.join(county_tiger, on='GEOID', how='inner')
+
+    return acs_gdf
+
+
+
