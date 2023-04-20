@@ -1,8 +1,13 @@
 import streamlit as st
 import folium
+import os
+os.environ['USE_PYGEOS'] = '0'
 import geopandas as gpd
 import pandas as pd
+
+import pygris
 from utils import create_grid, get_fips_code
+from get_census import get_county_census
 from streamlit_folium import folium_static
 import json
 
@@ -43,12 +48,17 @@ grid_df = create_grid(lat, lng, radius=800, size=200)
 
 
 # GET CENSUS DATA
-
+df_county_census = get_county_census(lat,lng, options)
 
 # GET RETAILS AND TRANSIT STOPS
 
 
 ########### FEATURE ENGINEERING #################
+
+
+
+
+########### ENRICH GRID #################
 
 
 ########### DISPLAY MAP ##################

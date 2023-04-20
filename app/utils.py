@@ -13,8 +13,8 @@ def create_grid(lat=37.78, lng=-122.39, radius=800, size=200):
     Args:
         lat (float): latitude of grid center
         lng (float): longitude of grid center
-        radius: (float) radius around center, defines grid boundaries
-        size (float): cell size of grid
+        radius: (float) radius around center in meters, defines grid boundaries
+        size (float): cell size of grid in meters
     Returns:
         GeoDataFrame: the generated grid
     """
@@ -81,9 +81,9 @@ def get_county_census_data(state, county, variable_names):
     Args:
         state (str): FIPS code of state
         county (str): FIPS code of county
-        variable_names List(str): table names
+        variable_names List(str): table names (e.g.'B01003_001E' for total population)
     Returns:
-        Dataframe: census block groups
+        Dataframe: census block group geometry with corresponding census variables. 
     """
     raise NotImplementedError
 
@@ -93,9 +93,9 @@ def census_features(census_df):
     Calculate the metrics using the cencus raw data.
 
     Args:
-        census_df (Dataframe): county blockgroupd dataframe
+        census_df (Dataframe): census block groups dataframe
     Returns:
-        Dataframe: blockgroups dataframe equity
+        Dataframe: bloc kgroups dataframe with calculated equity features. 
     
     """
     raise NotImplementedError
@@ -103,7 +103,7 @@ def census_features(census_df):
 
 def enrich_grid(grid_df, blockgroups_df_equity, porosity_df, retail_df, transit_df):
     """
-    spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
+    spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
     area interpolation from blockgroups_df_equity to grid_df to get census_df
     aggregate points_count by each grid
     join census_df, porosity_df on grid_id
