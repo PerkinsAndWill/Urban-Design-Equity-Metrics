@@ -34,7 +34,8 @@ with st.sidebar:
 
     st.write('You selected:', options)
     var_select = options
-    st.write(var_select)
+
+    st.write(type(var_select))
 
 
 
@@ -45,9 +46,6 @@ grid_df = create_grid(lat, lng, radius=800, size=200)
 # st.write(grid_df.head())
 
 ########### GET METRICS DATA #################
-# READ SELECTED VARIABLES
-# acs_code_df = pd.read_csv('../data/acs_variable_code.csv')
-
 
 # GET CENSUS DATA
 
@@ -55,9 +53,10 @@ df_county_census = get_county_census(lat,lng, var_select)
 
 # GET RETAILS AND TRANSIT STOPS
 
+# POROSITY DATA
 
 ########### FEATURE ENGINEERING #################
-
+#PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
 
 ########### ENRICH GRID #################
 final_grid = enrich_grid(grid_df, df_county_census, var_select)
@@ -80,7 +79,7 @@ m = folium.Map(location=[0.5*(start_lat + end_lat), 0.5*(start_lon+end_lon)], zo
 folium.GeoJson(geojson_data, style_function=lambda feature:{
     'color': 'black',
     'weight': '1',
-    'fillColor': 'red',
+    'fillColor': 'red', # NEED TO BE A VARIABLE INPUT BY THE USER
     'fillOpacity': 0.1
     }
 ).add_to(m)

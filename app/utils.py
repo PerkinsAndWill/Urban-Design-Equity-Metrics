@@ -7,8 +7,13 @@ import pandas as pd
 import requests
 
 import libpysal
+import collections.abc
+collections = collections.abc
+#collections.Iterable = collections.abc.Iterable
 from tobler.util import h3fy
 from tobler.area_weighted import area_interpolate
+
+
  
 def create_grid(lat=37.78, lng=-122.39, radius=800, size=200):
     """
