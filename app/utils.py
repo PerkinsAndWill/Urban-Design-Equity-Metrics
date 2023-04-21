@@ -5,6 +5,10 @@ from shapely import geometry
 # import folium
 import pandas as pd
 import requests
+
+import libpysal
+from tobler.util import h3fy
+from tobler.area_weighted import area_interpolate
  
 def create_grid(lat=37.78, lng=-122.39, radius=800, size=200):
     """
@@ -101,7 +105,7 @@ def census_features(census_df):
     raise NotImplementedError
 
 
-def enrich_grid(grid_df, blockgroups_df_equity, porosity_df, retail_df, transit_df):
+def enrich_grid(target_df, source_df, var_select):
     """
     spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
     area interpolation from blockgroups_df_equity to grid_df to get census_df
@@ -111,13 +115,14 @@ def enrich_grid(grid_df, blockgroups_df_equity, porosity_df, retail_df, transit_
     output equity_grid_df
 
     Args:
-        grid_df (Dataframe):
-        blockgroups_df_equity
-        porosity_df
-        retail_df
-        transit_df
+        target_df (GeoDataframe): grid_df
+        source_df (GeoDataframe): blockgroups_df_equity
     Returns:
-        Dataframe: equity grid dataframe
+        GeoDataframe: grid data frame with census data bundled in
     
     """
-    raise NotImplementedError
+
+    source_df = source_df.to_crs(target_df.crs)
+
+    final_fishnet = area_interpolate(source_df, target_df, extensive_variables=var_select)
+    raise final_fishnet

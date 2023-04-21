@@ -6,7 +6,7 @@ import geopandas as gpd
 import pandas as pd
 
 import pygris
-from utils import create_grid, get_fips_code
+from utils import create_grid, get_fips_code, enrich_grid
 from get_census import get_county_census
 from streamlit_folium import folium_static
 import json
@@ -60,11 +60,11 @@ df_county_census = get_county_census(lat,lng, var_select)
 
 
 ########### ENRICH GRID #################
-
+final_grid = enrich_grid(grid_df, df_county_census, var_select)
 
 ########### DISPLAY MAP ##################
 # Load the GeoJSON file
-geojson_data = json.loads(grid_df.to_json())  # NOTE: is this necessary?
+geojson_data = json.loads(final_grid.to_json())  # NOTE: is this necessary?
 # st.write(geojson_data['features'])
 
 # Create a Folium map centered on the first polygon in the GeoJSON data  # NOTE: polygons are centered on map now
