@@ -33,6 +33,8 @@ with st.sidebar:
     ['Total Population', 'Total Housing Units'])
 
     st.write('You selected:', options)
+    var_select = options
+    st.write(var_select)
 
 
 
@@ -48,14 +50,13 @@ grid_df = create_grid(lat, lng, radius=800, size=200)
 
 
 # GET CENSUS DATA
-df_county_census = get_county_census(lat,lng, options)
+
+df_county_census = get_county_census(lat,lng, var_select)
 
 # GET RETAILS AND TRANSIT STOPS
 
 
 ########### FEATURE ENGINEERING #################
-
-
 
 
 ########### ENRICH GRID #################

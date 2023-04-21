@@ -67,9 +67,10 @@ def get_county_census(lat,lng,var_select):
     # rename columns back to metrics name for readability
     inv_acs_dict = {v: k for k, v in acs_dict.items()}
     acs_df = acs_df.rename(columns=inv_acs_dict, inplace=True)
-    county_tiger = pygris.block_groups(state = state_fips, county = county_fips, cache = True, year = 2019)
+    county_tiger = pygris.block_groups(state = state_name, county = county_name, cache = True, year = 2019)
 
-    acs_gdf = acs_df.join(county_tiger, on='GEOID', how='inner')
+    acs_gdf = acs_df.merge(county_tiger, on='GEOID', how='inner')
+    acs_gdf = acs_gdf.set_geometry('geometry')
 
     return acs_gdf
 
