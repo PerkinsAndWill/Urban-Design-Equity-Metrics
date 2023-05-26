@@ -76,11 +76,13 @@ end_lon = sum(p[0] for p in coords) / len(coords)
 m = folium.Map(location=[0.5*(start_lat + end_lat), 0.5*(start_lon+end_lon)], zoom_start=14, tiles='CartoDB positron')
 
 # Add the GeoJSON data to the map as a GeoJSON layer
+max_opt = max([feature['properties'][options[0]] for feature in geojson_data['features']])
+
 folium.GeoJson(geojson_data, style_function=lambda feature:{
     'color': 'black',
-    'weight': '1',
+    'weight': '0.5',
     'fillColor': 'red', # NEED TO BE A VARIABLE INPUT BY THE USER
-    'fillOpacity': 0.1
+    'fillOpacity': feature['properties'][options[0]]/max_opt
     }
 ).add_to(m)
 
