@@ -29,6 +29,7 @@ def get_file_contents(filename):
     except FileNotFoundError:
         print("'%s' file not found" % filename)
 
+
 def get_county_census(lat,lng,var_select):
     """
     use census API to query the census table

@@ -82,41 +82,13 @@ def get_fips_code(lat, lng):
     return state_fips,state_name, county_fips, county_name
 
 
-def get_county_census_data(state, county, variable_names):
-    """
-    use census API to query the census table
-    query for all block groups in selected county
-
-    Args:
-        state (str): FIPS code of state
-        county (str): FIPS code of county
-        variable_names List(str): table names (e.g.'B01003_001E' for total population)
-    Returns:
-        Dataframe: census block group geometry with corresponding census variables. 
-    """
-    raise NotImplementedError
-
-
-def census_features(census_df):
-    """
-    Calculate the metrics using the cencus raw data.
-
-    Args:
-        census_df (Dataframe): census block groups dataframe
-    Returns:
-        Dataframe: bloc kgroups dataframe with calculated equity features. 
-    
-    """
-    raise NotImplementedError
-
-
 def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, var_select):
     """
     spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
-    area interpolation from blockgroups_df_equity to grid_df to get census_df
-    aggregate points_count by each grid
-    join census_df, porosity_df on grid_id
-    dedupe
+    area interpolation from blockgroups_df_equity to grid_df to get census_df: DONE
+    aggregate points_count by each grid: TODO
+    join census_df, porosity_df on grid_id: TODO
+    dedupe: TODO
     output equity_grid_df
 
     Args:
