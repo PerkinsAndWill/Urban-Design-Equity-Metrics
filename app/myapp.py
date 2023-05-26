@@ -6,7 +6,7 @@ import geopandas as gpd
 import pandas as pd
 
 import pygris
-from utils import create_grid, get_fips_code
+from utils import create_grid, get_fips_code, enrich_grid
 from get_census import get_county_census
 from streamlit_folium import folium_static
 import json
@@ -33,6 +33,9 @@ with st.sidebar:
     ['Total Population', 'Total Housing Units'])
 
     st.write('You selected:', options)
+    var_select = options
+
+    st.write(type(var_select))
 
 
 
@@ -43,27 +46,24 @@ grid_df = create_grid(lat, lng, radius=800, size=200)
 # st.write(grid_df.head())
 
 ########### GET METRICS DATA #################
-# READ SELECTED VARIABLES
-# acs_code_df = pd.read_csv('../data/acs_variable_code.csv')
-
 
 # GET CENSUS DATA
-df_county_census = get_county_census(lat,lng, options)
+
+df_county_census = get_county_census(lat,lng, var_select)
 
 # GET RETAILS AND TRANSIT STOPS
 
+# POROSITY DATA
 
 ########### FEATURE ENGINEERING #################
-
-
-
+#PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
 
 ########### ENRICH GRID #################
-
+final_grid = enrich_grid(grid_df, df_county_census, var_select)
 
 ########### DISPLAY MAP ##################
 # Load the GeoJSON file
-geojson_data = json.loads(grid_df.to_json())  # NOTE: is this necessary?
+geojson_data = json.loads(final_grid.to_json())  # NOTE: is this necessary?
 # st.write(geojson_data['features'])
 
 # Create a Folium map centered on the first polygon in the GeoJSON data  # NOTE: polygons are centered on map now
@@ -79,7 +79,7 @@ m = folium.Map(location=[0.5*(start_lat + end_lat), 0.5*(start_lon+end_lon)], zo
 folium.GeoJson(geojson_data, style_function=lambda feature:{
     'color': 'black',
     'weight': '1',
-    'fillColor': 'red',
+    'fillColor': 'red', # NEED TO BE A VARIABLE INPUT BY THE USER
     'fillOpacity': 0.1
     }
 ).add_to(m)

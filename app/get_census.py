@@ -73,6 +73,3 @@ def get_county_census(lat,lng,var_select):
     acs_gdf = acs_df.merge(county_tiger, on='GEOID', how='inner')
 
     return acs_gdf
-
-
-
