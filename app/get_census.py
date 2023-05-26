@@ -70,6 +70,6 @@ def get_county_census(lat,lng,var_select):
 
     county_tiger = pygris.block_groups(state = state_fips, county = county_fips[2::], cache = True, year = 2019)
 
-    acs_gdf = acs_df.merge(county_tiger, on='GEOID', how='inner')
+    acs_gdf = county_tiger.merge(acs_df, on='GEOID', how='inner')
 
     return acs_gdf
