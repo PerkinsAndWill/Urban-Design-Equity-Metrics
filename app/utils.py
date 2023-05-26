@@ -6,7 +6,7 @@ from shapely import geometry
 import pandas as pd
 import requests
 
-import libpysal
+# import libpysal
 import collections.abc
 collections = collections.abc
 #collections.Iterable = collections.abc.Iterable
@@ -110,7 +110,7 @@ def census_features(census_df):
     raise NotImplementedError
 
 
-def enrich_grid(target_df, source_df, var_select):
+def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, var_select):
     """
     spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
     area interpolation from blockgroups_df_equity to grid_df to get census_df
@@ -130,4 +130,4 @@ def enrich_grid(target_df, source_df, var_select):
     source_df = source_df.to_crs(target_df.crs)
 
     final_fishnet = area_interpolate(source_df, target_df, extensive_variables=var_select)
-    raise final_fishnet
+    return final_fishnet
