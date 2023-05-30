@@ -6,7 +6,7 @@ import geopandas as gpd
 import pandas as pd
 
 import pygris
-from utils import create_grid, get_fips_code, enrich_grid, get_network
+from utils import create_grid, get_fips_code, enrich_grid, get_network, get_porosity
 from get_census import get_county_census
 from streamlit_folium import folium_static
 import json
@@ -58,16 +58,18 @@ df_county_census = get_county_census(lat,lng, var_select)
 network = get_network(lat, lng, distance=800, network_type="walk")
 network = network.to_crs(grid_df.crs)
 network = network.overlay(grid_df, how="intersection")
+porosity = get_porosity(grid_df, network)
 
 ########### FEATURE ENGINEERING #################
 #PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
 
 ########### ENRICH GRID #################
 final_grid = enrich_grid(grid_df, df_county_census, var_select)
-
+final_grid = final_grid.assign(porosity=porosity)
 ########### DISPLAY MAP ##################
 # Load the GeoJSON file
 geojson_data = json.loads(final_grid.to_json())  # NOTE: is this necessary?
+
 # st.write(geojson_data['features'])
 
 # Create a Folium map centered on the first polygon in the GeoJSON data  # NOTE: polygons are centered on map now
@@ -80,12 +82,8 @@ end_lon = sum(p[0] for p in coords) / len(coords)
 m = folium.Map(location=[0.5*(start_lat + end_lat), 0.5*(start_lon+end_lon)], zoom_start=14, tiles='CartoDB positron')
 
 # Add the GeoJSON data to the map as a GeoJSON layer
+options=['porosity']
 max_opt = max([feature['properties'][options[0]] for feature in geojson_data['features']])
-
-folium.GeoJson(network, style_function=lambda feature: {
-    'color': 'blue',
-    'weight': '1.0',
-}).add_to(m)
 
 folium.GeoJson(geojson_data, style_function=lambda feature:{
     'color': 'black',
@@ -94,6 +92,11 @@ folium.GeoJson(geojson_data, style_function=lambda feature:{
     'fillOpacity': feature['properties'][options[0]]/max_opt
     }
 ).add_to(m)
+
+folium.GeoJson(network, style_function=lambda feature: {
+    'color': 'blue',
+    'weight': '0.5',
+}).add_to(m)
 
 # Display the map in Streamlit
 folium_static(m)

@@ -85,12 +85,33 @@ def get_fips_code(lat, lng):
     return state_fips,state_name, county_fips, county_name
 
 def get_network(latitude, longitude, distance, network_type):
+    """
+    Pull network data from open street maps. Used for porosity with network_type='walk'
+    """
     location_point = (latitude,longitude)
     G = ox.graph_from_point(location_point, dist=distance, dist_type='bbox', 
             network_type= network_type, simplify=True)
     G = ox.project_graph(G)
     edges = ox.graph_to_gdfs(G, nodes=False, edges=True).reset_index()
     return edges
+
+def get_porosity(grid, network):
+    """
+    intersects each grid cell with the network, calculates network length per cell
+
+    Args:
+        grid (GeoDataframe): grid_df
+        network (GeoDataframe): streets/walking routes
+    Returns:
+        List: length of network inside each cell
+    """
+    network = network.to_crs(grid.crs)
+    porosity = []
+    for polygon in grid.geometry:
+        gdf = gpd.GeoDataFrame({'geometry': gpd.GeoSeries([polygon])})
+        nw = network.overlay(gdf, how="intersection")
+        porosity.append(sum(nw.geometry.length))
+    return porosity
 
 
 def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, var_select):
