@@ -5,6 +5,7 @@ from shapely import geometry
 # import folium
 import pandas as pd
 import requests
+import osmnx as ox
 
 # import libpysal
 import collections.abc
@@ -13,6 +14,8 @@ collections = collections.abc
 from tobler.util import h3fy
 from tobler.area_weighted import area_interpolate
 
+ox.config(log_console=True, use_cache=True)
+ox.__version__
 
  
 def create_grid(lat=37.78, lng=-122.39, radius=800, size=200):
@@ -80,6 +83,14 @@ def get_fips_code(lat, lng):
     county_fips = data["County"]["FIPS"]
     county_name = data["County"]["name"]
     return state_fips,state_name, county_fips, county_name
+
+def get_network(latitude, longitude, distance, network_type):
+    location_point = (latitude,longitude)
+    G = ox.graph_from_point(location_point, dist=distance, dist_type='bbox', 
+            network_type= network_type, simplify=True)
+    G = ox.project_graph(G)
+    edges = ox.graph_to_gdfs(G, nodes=False, edges=True).reset_index()
+    return edges
 
 
 def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, var_select):

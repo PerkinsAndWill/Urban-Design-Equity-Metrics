@@ -4,3 +4,5 @@ streamlit-folium
 shapely
 geopandas
 googlemaps
+tobler
+osmnx

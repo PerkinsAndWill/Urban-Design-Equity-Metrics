@@ -6,7 +6,7 @@ import geopandas as gpd
 import pandas as pd
 
 import pygris
-from utils import create_grid, get_fips_code, enrich_grid
+from utils import create_grid, get_fips_code, enrich_grid, get_network
 from get_census import get_county_census
 from streamlit_folium import folium_static
 import json
@@ -29,7 +29,9 @@ with st.sidebar:
 
     options = st.multiselect(
     'Select Metrics',
-    ['Total Population', 'Total Jobs (All Workers)', 'Total Housing Units', 'Total Low Income Population', 'Black Population', 'Hispanic or Latino Population', 'Pct_Rent_Burdened', 'Porosity', 'Retail Spots', 'Transit Stops'],
+    ['Total Population', 'Total Jobs (All Workers)', 'Total Housing Units', 
+    'Total Low Income Population', 'Black Population', 'Hispanic or Latino Population', 
+    'Pct_Rent_Burdened', 'Porosity', 'Retail Spots', 'Transit Stops'],
     ['Total Population', 'Total Housing Units'])
 
     st.write('You selected:', options)
@@ -48,12 +50,14 @@ grid_df = create_grid(lat, lng, radius=800, size=200)
 ########### GET METRICS DATA #################
 
 # GET CENSUS DATA
-
 df_county_census = get_county_census(lat,lng, var_select)
 
 # GET RETAILS AND TRANSIT STOPS
 
 # POROSITY DATA
+network = get_network(lat, lng, distance=800, network_type="walk")
+network = network.to_crs(grid_df.crs)
+network = network.overlay(grid_df, how="intersection")
 
 ########### FEATURE ENGINEERING #################
 #PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
@@ -77,6 +81,11 @@ m = folium.Map(location=[0.5*(start_lat + end_lat), 0.5*(start_lon+end_lon)], zo
 
 # Add the GeoJSON data to the map as a GeoJSON layer
 max_opt = max([feature['properties'][options[0]] for feature in geojson_data['features']])
+
+folium.GeoJson(network, style_function=lambda feature: {
+    'color': 'blue',
+    'weight': '1.0',
+}).add_to(m)
 
 folium.GeoJson(geojson_data, style_function=lambda feature:{
     'color': 'black',
