@@ -6,7 +6,8 @@ import geopandas as gpd
 import pandas as pd
 
 import pygris
-from utils import create_grid, get_fips_code, enrich_grid, get_network, get_porosity
+from utils import get_point_density, create_grid, get_all_retail_points, get_fips_code, \
+            enrich_grid, get_network, get_porosity, locations_to_geojson
 from get_census import get_county_census
 from streamlit_folium import folium_static
 import json
@@ -44,14 +45,20 @@ with st.sidebar:
 
 # lat, lng to create grid overlay of given radius around lat,lng
 grid_df = create_grid(lat, lng, radius=800, size=200)
+print("grid ok")
 # st.write(grid_df.head())
 
 ########### GET METRICS DATA #################
 
 # GET CENSUS DATA
 df_county_census = get_county_census(lat,lng, var_select)
+print("sensus ok")
 
 # GET RETAILS AND TRANSIT STOPS
+retail_locations = get_all_retail_points(location=f"{lat}, {lng}", radius=800)
+locations_geojson = locations_to_geojson(retail_locations)
+print("retail ok")
+density = get_point_density(grid_df, retail_locations, normalize=True)
 
 # POROSITY DATA
 network = get_network(lat, lng, distance=800, network_type="walk")
@@ -63,11 +70,11 @@ porosity = get_porosity(grid_df, network)
 #PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
 
 ########### ENRICH GRID #################
-final_grid = enrich_grid(grid_df, df_county_census, porosity, var_select)
+final_grid = enrich_grid(grid_df, df_county_census, porosity, density, var_select)
 
 ########### DISPLAY MAP ##################
 # Load the GeoJSON file
-geojson_data = json.loads(final_grid.to_json())  # NOTE: is this necessary?
+geojson_data = json.loads(final_grid.to_json()) 
 
 # st.write(geojson_data['features'])
 
@@ -81,7 +88,7 @@ end_lon = sum(p[0] for p in coords) / len(coords)
 m = folium.Map(location=[0.5*(start_lat + end_lat), 0.5*(start_lon+end_lon)], zoom_start=14, tiles='CartoDB positron')
 
 # Add the GeoJSON data to the map as a GeoJSON layer
-options=['porosity']
+options=['density']
 max_opt = max([feature['properties'][options[0]] for feature in geojson_data['features']])
 
 folium.GeoJson(geojson_data, style_function=lambda feature:{
@@ -96,6 +103,13 @@ folium.GeoJson(network, style_function=lambda feature: {
     'color': 'blue',
     'weight': '0.5',
 }).add_to(m)
+
+folium.GeoJson(locations_geojson, marker=folium.CircleMarker(
+    radius = 5, # Radius in metres
+    weight = 0, #outline weight
+    fill_color = 'green', 
+    fill_opacity = 1
+)).add_to(m)
 
 # Display the map in Streamlit
 folium_static(m)

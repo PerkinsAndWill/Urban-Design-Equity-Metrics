@@ -1,4 +1,6 @@
+import json
 import os
+import time
 from typing import List
 os.environ['USE_PYGEOS'] = '0'
 import geopandas as gpd
@@ -7,6 +9,7 @@ from shapely import geometry
 import pandas as pd
 import requests
 import osmnx as ox
+import numpy as np
 
 # import libpysal
 import collections.abc
@@ -115,12 +118,118 @@ def get_porosity(grid, network):
     return porosity
 
 
-def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosity: List, var_select):
+def search_places_by_coordinate(key, location, radius, type, max_pages=20):
+    """
+    Use google api to retrieve 'places' around location within radius
+
+    Args:
+        key: google api key
+        location (str): 'latitude, longitude' center for the search
+        radius (str): radius for the places search
+        types (str): type of places to search for
+    Returns:
+        List: places as returned by google api
+    """
+
+    endpoint_url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+    places = []
+    params = {
+        'location': location,
+        'radius': radius,
+        'type': type,
+        'key': key
+    }
+
+    for i in range(max_pages):
+        try:
+            response = requests.get(endpoint_url, params=params, timeout=(3, 5))
+            print(response.status_code)
+            print(json.loads(response.content)['status'])
+        except requests.exceptions.Timeout:
+            print("The request timed out")
+        except requests.exceptions.RequestException as e:
+            print("An error occurred:", e)
+    
+        results =  json.loads(response.content)
+        places.extend(results['results'])
+        print(f'page {i+1}',len(places))
+        
+        if not "next_page_token" in results:
+            break
+        params['pagetoken'] = results['next_page_token']
+        time.sleep(2)
+
+    print('all pages',len(places))
+    return places
+
+
+def get_all_retail_points(location, radius):
+    """
+    Invoke google api around a center for each location type in the retail file (list_retail.csv)
+
+    Args:
+        location (str): 'latitude, longitude' center for the search
+        radius (str): radius for the places search
+    Returns:
+        List[Dict {'coordinates': [lon, lat], 'type': str}] 
+    """
+
+    # load private key
+    with open("../private_key.txt", 'r') as f:
+        key = f.readline().strip()
+
+    # load retail list
+    with open("../data/list_retail.csv", "r") as f:
+        retail_list = [line.strip() for line in f]
+
+    # call google api and store results
+    retail_points = []
+    for retail in retail_list:
+        places = search_places_by_coordinate(key, location, radius, retail)
+        for p in places:
+            point = {'coordinates': [p['geometry']['location']['lng'], p['geometry']['location']['lat']],
+                        'type': retail}
+            retail_points.append(point)
+
+    return retail_points
+
+
+def locations_to_geojson(locations):
+
+    features = []
+    for loc in locations:
+        features.append({ "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": loc['coordinates']},
+        "properties": {"type": loc['type']}
+        }
+      )
+
+    geojson_locations = { "type": "FeatureCollection", "features": features}
+    return geojson_locations
+
+
+def get_point_density(grid_df, location_points, normalize=True):
+
+    density = np.zeros((len(grid_df['geometry']),)).astype(float)
+    crs = grid_df.crs
+    grid_df = grid_df.to_crs(4326)  # google uses wgs84
+    for location in location_points:
+        point = geometry.Point(*location['coordinates'])
+        density += grid_df.contains(point).astype(float)
+
+    if normalize:
+        density = density / len(location_points)
+
+    grid_df = grid_df.to_crs(crs)
+    return density.tolist()
+
+
+def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosity: List, density:list, var_select):
     """
     spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
     area interpolation from blockgroups_df_equity to grid_df to get census_df: DONE
     aggregate points_count by each grid: TODO
-    join census_df, porosity_df on grid_id: TODO
+    join census_df, porosity_df on grid_id:
     dedupe: TODO
     output equity_grid_df
 
@@ -137,5 +246,7 @@ def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosi
     final_fishnet = area_interpolate(source_df, target_df, extensive_variables=var_select)
     
     final_fishnet = final_fishnet.assign(porosity=porosity)
+
+    final_fishnet = final_fishnet.assign(density=density)
     
     return final_fishnet

@@ -131,3 +131,4 @@ dmypy.json
 # Other
 ud_env
 cache
+private_key.txt
