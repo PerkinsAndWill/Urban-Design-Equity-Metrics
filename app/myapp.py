@@ -55,7 +55,9 @@ df_county_census = get_county_census(lat,lng, var_select)
 print("sensus ok")
 
 # GET RETAILS AND TRANSIT STOPS
-retail_locations = get_all_retail_points(location=f"{lat}, {lng}", radius=800)
+# retail_locations = get_all_retail_points(location=f"{lat}, {lng}", radius=800)
+with open('cached_retail_locations.json', 'r') as f:
+    retail_locations = json.load(f)
 locations_geojson = locations_to_geojson(retail_locations)
 print("retail ok")
 density = get_point_density(grid_df, retail_locations, normalize=True)
@@ -91,6 +93,13 @@ m = folium.Map(location=[0.5*(start_lat + end_lat), 0.5*(start_lon+end_lon)], zo
 options=['density']
 max_opt = max([feature['properties'][options[0]] for feature in geojson_data['features']])
 
+folium.GeoJson(locations_geojson, marker=folium.CircleMarker(
+    radius = 3, # Radius in metres
+    weight = 0, #outline weight
+    fill_color = 'red', 
+    fill_opacity = 0.5
+)).add_to(m)
+
 folium.GeoJson(geojson_data, style_function=lambda feature:{
     'color': 'black',
     'weight': '0.5',
@@ -103,13 +112,6 @@ folium.GeoJson(network, style_function=lambda feature: {
     'color': 'blue',
     'weight': '0.5',
 }).add_to(m)
-
-folium.GeoJson(locations_geojson, marker=folium.CircleMarker(
-    radius = 5, # Radius in metres
-    weight = 0, #outline weight
-    fill_color = 'green', 
-    fill_opacity = 1
-)).add_to(m)
 
 # Display the map in Streamlit
 folium_static(m)
