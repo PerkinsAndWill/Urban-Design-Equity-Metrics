@@ -1,4 +1,5 @@
 import os
+from typing import List
 os.environ['USE_PYGEOS'] = '0'
 import geopandas as gpd
 from shapely import geometry
@@ -114,7 +115,7 @@ def get_porosity(grid, network):
     return porosity
 
 
-def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, var_select):
+def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosity: List, var_select):
     """
     spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
     area interpolation from blockgroups_df_equity to grid_df to get census_df: DONE
@@ -134,4 +135,7 @@ def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, var_se
     source_df = source_df.to_crs(target_df.crs)
 
     final_fishnet = area_interpolate(source_df, target_df, extensive_variables=var_select)
+    
+    final_fishnet = final_fishnet.assign(porosity=porosity)
+    
     return final_fishnet

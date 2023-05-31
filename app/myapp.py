@@ -64,8 +64,8 @@ porosity = get_porosity(grid_df, network)
 #PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
 
 ########### ENRICH GRID #################
-final_grid = enrich_grid(grid_df, df_county_census, var_select)
-final_grid = final_grid.assign(porosity=porosity)
+final_grid = enrich_grid(grid_df, df_county_census, porosity, var_select)
+
 ########### DISPLAY MAP ##################
 # Load the GeoJSON file
 geojson_data = json.loads(final_grid.to_json())  # NOTE: is this necessary?
