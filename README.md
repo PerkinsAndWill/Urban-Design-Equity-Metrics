@@ -20,7 +20,8 @@ PW Neighborhood Equity Metrics Dashboard
     ```
 * run streamlit app:
     ```
-    streamlit run app/myapp.py
+    cd app
+    streamlit run myapp.py
     ```
 
 ## Overview
