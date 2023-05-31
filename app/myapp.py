@@ -12,8 +12,7 @@ from streamlit_folium import folium_static
 import json
 
 ## set up title, header
-st.title("Urban Desgin Equity Metrics Dashboard")
-
+st.title("Urban Design Equity Metrics Dashboard")
 
 
 ########### INPUT SECTION ##############
