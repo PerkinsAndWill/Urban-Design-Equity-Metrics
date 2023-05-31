@@ -56,7 +56,7 @@ print("sensus ok")
 
 # GET RETAILS AND TRANSIT STOPS
 # retail_locations = get_all_retail_points(location=f"{lat}, {lng}", radius=800)
-with open('cached_retail_locations.json', 'r') as f:
+with open('../cached_retail_locations.json', 'r') as f:
     retail_locations = json.load(f)
 locations_geojson = locations_to_geojson(retail_locations)
 print("retail ok")
