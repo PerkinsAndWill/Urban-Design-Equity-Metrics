@@ -5,8 +5,8 @@ import os
 os.environ['USE_PYGEOS'] = '0'
 
 from utils import get_point_density, create_grid, get_all_retail_points, get_fips_code, \
-            enrich_grid, get_network, get_porosity, locations_to_geojson
-from get_census import get_county_census
+            enrich_grid, get_network, get_porosity, locations_to_geojson, \
+            get_county_census
 from streamlit_folium import folium_static
 import json
 
@@ -17,6 +17,7 @@ st.title("Urban Design Equity Metrics Dashboard")
 ########### INPUT SECTION ##############
 ##### Sidebar
 
+
 # user input lat, lng
 with st.sidebar:
     st.markdown("#### Input Latitude and Longitude of your Interested Neighborhood")
@@ -24,19 +25,6 @@ with st.sidebar:
     lng = st.number_input('Insert Longitude', value=-122.39505)
     state_fips,state_name, county_fips, county_name = get_fips_code(lat, lng)
     st.write('The current coordinates is ', state_name, ', ', county_name)
-
-    options = st.multiselect(
-    'Select Metrics',
-    ['Total Population', 'Total Jobs (All Workers)', 'Total Housing Units', 
-    'Total Low Income Population', 'Black Population', 'Hispanic or Latino Population', 
-    'Pct_Rent_Burdened', 'Porosity', 'Retail Spots', 'Transit Stops'],
-    ['Total Population', 'Total Housing Units'])
-
-    st.write('You selected:', options)
-    var_select = options
-
-    st.write(type(var_select))
-
 
 
 ########### CONSTRUCT STUDY AREA ##############
@@ -48,7 +36,7 @@ print("grid ok")
 ########### GET METRICS DATA #################
 
 # GET CENSUS DATA
-df_county_census = get_county_census(lat,lng, var_select)
+df_county_census = get_county_census(lat,lng)
 print("sensus ok")
 
 # GET RETAILS AND TRANSIT STOPS
@@ -69,7 +57,7 @@ porosity = get_porosity(grid_df, network)
 #PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
 
 ########### ENRICH GRID #################
-final_grid = enrich_grid(grid_df, df_county_census, porosity, density, var_select)
+final_grid = enrich_grid(grid_df, df_county_census, porosity, density)
 
 ########### DISPLAY MAP ##################
 # Load the GeoJSON file
@@ -77,14 +65,8 @@ geojson_data = json.loads(final_grid.to_json())
 
 # st.write(geojson_data['features'])
 
-# Create a Folium map centered on the first polygon in the GeoJSON data  # NOTE: polygons are centered on map now
-coords = geojson_data['features'][0]['geometry']['coordinates'][0][:-1]
-start_lat = sum(p[1] for p in coords) / len(coords)
-start_lon = sum(p[0] for p in coords) / len(coords)
-coords = geojson_data['features'][-1]['geometry']['coordinates'][0][:-1]
-end_lat = sum(p[1] for p in coords) / len(coords)
-end_lon = sum(p[0] for p in coords) / len(coords)
-m = folium.Map(location=[0.5*(start_lat + end_lat), 0.5*(start_lon+end_lon)], zoom_start=14, tiles='CartoDB positron')
+# Create a Folium map centered on (lat, lng)
+m = folium.Map(location=[lat, lng], zoom_start=14, tiles='CartoDB positron')
 
 # Add the GeoJSON data to the map as a GeoJSON layer
 options=['density']
@@ -106,7 +88,7 @@ folium.GeoJson(locations_geojson, marker=folium.CircleMarker(
 folium.GeoJson(geojson_data, style_function=lambda feature:{
     'color': '#999999',
     'weight': '0.5',
-    'fillColor': 'red', # NEED TO BE A VARIABLE INPUT BY THE USER
+    'fillColor': 'red',
     'fillOpacity': 0.8 * feature['properties'][options[0]]/max_opt
     }
 ).add_to(m)

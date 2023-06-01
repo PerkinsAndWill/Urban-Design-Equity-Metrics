@@ -6,17 +6,17 @@ os.environ['USE_PYGEOS'] = '0'
 import streamlit as st
 import geopandas as gpd
 from shapely import geometry
-# import folium
 import pandas as pd
 import requests
 import osmnx as ox
 import numpy as np
+from census import Census
+import pygris
 
 # import libpysal
 import collections.abc
 collections = collections.abc
 #collections.Iterable = collections.abc.Iterable
-from tobler.util import h3fy
 from tobler.area_weighted import area_interpolate
 
 ox.config(log_console=True, use_cache=True)
@@ -229,7 +229,7 @@ def get_point_density(grid_df, location_points, normalize=True):
     return density.tolist()
 
 
-def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosity: List, density:list, var_select):
+def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosity: List, density:list, var_select=None):
     """
     spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
     area interpolation from blockgroups_df_equity to grid_df to get census_df: DONE
@@ -246,6 +246,9 @@ def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosi
     
     """
 
+    if var_select is None:
+        var_select = list(acs_dict.keys())
+
     source_df = source_df.to_crs(target_df.crs)
 
     final_fishnet = area_interpolate(source_df, target_df, extensive_variables=var_select)
@@ -255,3 +258,87 @@ def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosi
     final_fishnet = final_fishnet.assign(density=density)
     
     return final_fishnet
+
+
+# Get Variable Code
+def get_acs_code(var_select,filepath = '../data/acs_variable_code.csv'):
+    acs_code_df = pd.read_csv(filepath)
+    acs_dict = {}
+    for i in range(len(acs_code_df)):
+        acs_dict[acs_code_df.loc[i,'Variable Name']] = acs_code_df.loc[i,'Variable Code']
+
+    code_list = ['NAME']
+    for f in var_select:
+        code_list.append(acs_dict[f])
+    return tuple(code_list), acs_dict
+
+
+# read in census api key
+def get_file_contents(filename):
+    """ Given a filename,
+        return the contents of that file
+    """
+    try:
+        with open(filename, 'r') as f:
+            # It's assumed our file contains a single line,
+            # with our API key
+            return f.read().strip()
+    except FileNotFoundError:
+        print("'%s' file not found" % filename)
+
+
+@st.cache_data(persist=True)
+def get_county_census(lat,lng):
+    """
+    use census API to query the census table
+    query for all block groups in selected county
+
+    Args:
+        state (str): FIPS code of state
+        county (str): FIPS code of county
+        variable_names List(str): table names (e.g.'B01003_001E' for total population)
+    Returns:
+        Dataframe: census block group geometry with corresponding census variables. 
+    """
+
+    # read in variable code
+    code_list = tuple(acs_dict.values())
+
+    # read in census api
+    api_key = get_file_contents('census_api_key.txt')
+    c = Census(api_key)
+    # get state, county fips codes
+    state_fips, state_name, county_fips, county_name = get_fips_code(lat,lng)
+
+    # call census api for selected variables at given location
+    sc_census = c.acs5.state_county_blockgroup(fields= code_list, 
+                                            state_fips = str(state_fips), 
+                                            county_fips = str(county_fips[2::]), 
+                                            blockgroup = '*', 
+                                            year = 2019)
+
+    
+    # Feature Engineering, create geoid
+    acs_df = pd.DataFrame(sc_census)
+    acs_df['GEOID'] = acs_df['state'] + acs_df['county'] + acs_df['tract'] + acs_df['block group']
+
+    # rename columns back to metrics name for readability
+    inv_acs_dict = {v: k for k, v in acs_dict.items()}
+    acs_df.rename(columns=inv_acs_dict, inplace=True)
+
+    county_tiger = pygris.block_groups(state = state_fips, county = county_fips[2::], cache = True, year = 2019)
+
+    acs_gdf = county_tiger.merge(acs_df, on='GEOID', how='inner')
+
+    return acs_gdf
+
+
+acs_dict = {
+    "Total Population": "B01003_001E",
+    # "Total Jobs (All Workers)": "B08126_001E",
+    "Total Housing Units": "B25001_001E",
+    "Total Low Income Population": "C17002_001E",
+    "Black Population": "B02001_003E",
+    "Hispanic or Latino Population": "B03003_003E",
+    "Pct_Rent_Burdened": "B25070_010E",
+}
