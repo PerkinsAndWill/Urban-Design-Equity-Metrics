@@ -1,11 +1,9 @@
 import streamlit as st
 import folium
+import branca
 import os
 os.environ['USE_PYGEOS'] = '0'
-import geopandas as gpd
-import pandas as pd
 
-import pygris
 from utils import get_point_density, create_grid, get_all_retail_points, get_fips_code, \
             enrich_grid, get_network, get_porosity, locations_to_geojson
 from get_census import get_county_census
@@ -46,7 +44,6 @@ with st.sidebar:
 # lat, lng to create grid overlay of given radius around lat,lng
 grid_df = create_grid(lat, lng, radius=800, size=200)
 print("grid ok")
-# st.write(grid_df.head())
 
 ########### GET METRICS DATA #################
 
@@ -55,9 +52,9 @@ df_county_census = get_county_census(lat,lng, var_select)
 print("sensus ok")
 
 # GET RETAILS AND TRANSIT STOPS
-# retail_locations = get_all_retail_points(location=f"{lat}, {lng}", radius=800)
-with open('../cached_retail_locations.json', 'r') as f:
-    retail_locations = json.load(f)
+retail_locations = get_all_retail_points(location=f"{lat}, {lng}", radius=800)
+# with open('../cached_retail_locations.json', 'r') as f:
+#     retail_locations = json.load(f)
 locations_geojson = locations_to_geojson(retail_locations)
 print("retail ok")
 density = get_point_density(grid_df, retail_locations, normalize=True)
@@ -93,25 +90,31 @@ m = folium.Map(location=[0.5*(start_lat + end_lat), 0.5*(start_lon+end_lon)], zo
 options=['density']
 max_opt = max([feature['properties'][options[0]] for feature in geojson_data['features']])
 
-folium.GeoJson(locations_geojson, marker=folium.CircleMarker(
-    radius = 3, # Radius in metres
-    weight = 0, #outline weight
-    fill_color = 'red', 
-    fill_opacity = 0.5
-)).add_to(m)
-
-folium.GeoJson(geojson_data, style_function=lambda feature:{
-    'color': 'black',
-    'weight': '0.5',
-    'fillColor': 'red', # NEED TO BE A VARIABLE INPUT BY THE USER
-    'fillOpacity': feature['properties'][options[0]]/max_opt
-    }
-).add_to(m)
-
 folium.GeoJson(network, style_function=lambda feature: {
     'color': 'blue',
     'weight': '0.5',
+    'opacity': 0.2
 }).add_to(m)
+
+folium.GeoJson(locations_geojson, marker=folium.CircleMarker(
+    radius = 2, 
+    weight = 0, #outline weight
+    fill_color = 'red', 
+    fill_opacity = 0.2
+)).add_to(m)
+
+folium.GeoJson(geojson_data, style_function=lambda feature:{
+    'color': '#999999',
+    'weight': '0.5',
+    'fillColor': 'red', # NEED TO BE A VARIABLE INPUT BY THE USER
+    'fillOpacity': 0.8 * feature['properties'][options[0]]/max_opt
+    }
+).add_to(m)
+
+colormap = branca.colormap.LinearColormap(colors=[(255, 0, 0, 0), (255, 0, 0, int(255*0.8))], 
+            vmin=0.0, vmax=1.0, tick_labels=[0, 0.2, 0.4, 0.6, 0.8])
+colormap.caption = 'legend placeholder'
+colormap.add_to(m)
 
 # Display the map in Streamlit
 folium_static(m)
