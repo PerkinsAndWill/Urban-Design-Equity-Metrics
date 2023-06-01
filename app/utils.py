@@ -148,8 +148,8 @@ def search_places_by_coordinate(key, location, radius, type, max_pages=20):
     for i in range(max_pages):
         try:
             response = requests.get(endpoint_url, params=params, timeout=(3, 5))
-            print(response.status_code)
-            print(json.loads(response.content)['status'])
+            # print(response.status_code)
+            # print(json.loads(response.content)['status'])
         except requests.exceptions.Timeout:
             print("The request timed out")
         except requests.exceptions.RequestException as e:
@@ -157,14 +157,14 @@ def search_places_by_coordinate(key, location, radius, type, max_pages=20):
     
         results =  json.loads(response.content)
         places.extend(results['results'])
-        print(f'page {i+1}',len(places))
+        # print(f'page {i+1}',len(places))
         
         if not "next_page_token" in results:
             break
         params['pagetoken'] = results['next_page_token']
         time.sleep(2)
 
-    print('all pages',len(places))
+    # print('all pages',len(places))
     return places
 
 

@@ -9,6 +9,7 @@ from utils import get_point_density, create_grid, get_all_retail_points, get_fip
             get_county_census, acs_dict
 from streamlit_folium import folium_static
 import json
+import time
 
 ## set up title, header
 st.title("Urban Design Equity Metrics Dashboard")
@@ -40,22 +41,27 @@ print("grid ok")
 ########### GET METRICS DATA #################
 
 # GET CENSUS DATA
+time0 = time.time()
 df_county_census = get_county_census(lat,lng)
-print("sensus ok")
+print(f"\ncall to census completed in {time.time()-time0:.2f} seconds\n")
 
+time0 = time.time()
 # GET RETAILS AND TRANSIT STOPS
 retail_locations = get_all_retail_points(location=f"{lat}, {lng}", radius=800)
-# with open('../cached_retail_locations.json', 'r') as f:
-#     retail_locations = json.load(f)
+print(f"\ncall to retail (Google API) completed in {time.time()-time0:.2f} seconds\n")
 locations_geojson = locations_to_geojson(retail_locations)
-print("retail ok")
 retail_density = get_point_density(grid_df, retail_locations, normalize=False)
 
 # POROSITY DATA
+time0 = time.time()
 network = get_network(lat, lng, distance=800, network_type="walk")
+print(f"\ncall to network (OSM) completed in {time.time()-time0:.2f} seconds\n")
+
 network = network.to_crs(grid_df.crs)
 network = network.overlay(grid_df, how="intersection")
 porosity = get_porosity(grid_df, network, lat, lng)
+print(f"\ntotal network processing completed in {time.time()-time0:.2f} seconds\n")
+
 
 ########### FEATURE ENGINEERING #################
 #PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
@@ -96,11 +102,11 @@ folium.GeoJson(geojson_data, style_function=lambda feature:{
     'weight': '0.5',
     'opacity': 0.2,
     'fillColor': 'red',
-    'fillOpacity': 0.8 * feature['properties'][option]/max_opt
+    'fillOpacity': 0.7 * feature['properties'][option]/max_opt
     }
 ).add_to(m)
 
-colormap = branca.colormap.LinearColormap(colors=[(255, 0, 0, 0), (255, 0, 0, int(255*0.8))], 
+colormap = branca.colormap.LinearColormap(colors=[(255, 0, 0, 0), (255, 0, 0, int(255*0.7))], 
             vmin=min_opt, vmax=max_opt)  # , tick_labels=[0, 0.2, 0.4, 0.6, 0.8]
 colormap.caption = option
 colormap.add_to(m)
