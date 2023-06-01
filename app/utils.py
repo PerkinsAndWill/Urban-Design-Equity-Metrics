@@ -103,7 +103,8 @@ def get_network(latitude, longitude, distance, network_type):
     return edges
 
 
-def get_porosity(grid, network):
+@st.cache_data(persist=True)
+def get_porosity(_grid, _network, lat, lng):
     """
     intersects each grid cell with the network, calculates network length per cell
 
@@ -113,11 +114,11 @@ def get_porosity(grid, network):
     Returns:
         List: length of network inside each cell
     """
-    network = network.to_crs(grid.crs)
+    _network = _network.to_crs(_grid.crs)
     porosity = []
-    for polygon in grid.geometry:
+    for polygon in _grid.geometry:
         gdf = gpd.GeoDataFrame({'geometry': gpd.GeoSeries([polygon])})
-        nw = network.overlay(gdf, how="intersection")
+        nw = _network.overlay(gdf, how="intersection")
         porosity.append(sum(nw.geometry.length))
     return porosity
 
@@ -213,19 +214,20 @@ def locations_to_geojson(locations):
     return geojson_locations
 
 
-def get_point_density(grid_df, location_points, normalize=True):
+@st.cache_data(persist=True)
+def get_point_density(_grid_df, location_points, normalize=True):
 
-    density = np.zeros((len(grid_df['geometry']),)).astype(float)
-    crs = grid_df.crs
-    grid_df = grid_df.to_crs(4326)  # google uses wgs84
+    density = np.zeros((len(_grid_df['geometry']),)).astype(float)
+    crs = _grid_df.crs
+    _grid_df = _grid_df.to_crs(4326)  # google uses wgs84
     for location in location_points:
         point = geometry.Point(*location['coordinates'])
-        density += grid_df.contains(point).astype(float)
+        density += _grid_df.contains(point).astype(float)
 
     if normalize:
         density = density / len(location_points)
 
-    grid_df = grid_df.to_crs(crs)
+    _grid_df = _grid_df.to_crs(crs)
     return density.tolist()
 
 

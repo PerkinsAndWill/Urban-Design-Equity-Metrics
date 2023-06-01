@@ -55,7 +55,7 @@ retail_density = get_point_density(grid_df, retail_locations, normalize=False)
 network = get_network(lat, lng, distance=800, network_type="walk")
 network = network.to_crs(grid_df.crs)
 network = network.overlay(grid_df, how="intersection")
-porosity = get_porosity(grid_df, network)
+porosity = get_porosity(grid_df, network, lat, lng)
 
 ########### FEATURE ENGINEERING #################
 #PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
@@ -70,7 +70,7 @@ geojson_data = json.loads(final_grid.to_json())
 # st.write(geojson_data['features'])
 
 # Create a Folium map centered on (lat, lng)
-m = folium.Map(location=[lat, lng], zoom_start=14, tiles='CartoDB positron')
+m = folium.Map(location=[lat, lng], zoom_start=15, tiles='CartoDB positron')
 
 # Add the GeoJSON data to the map as a GeoJSON layer
 max_opt = max([feature['properties'][option] for feature in geojson_data['features']])
