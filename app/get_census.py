@@ -1,6 +1,7 @@
 import pandas as pd
 from census import Census
 import pygris
+import streamlit as st
 from utils import get_fips_code
 
 # Get Variable Code
@@ -30,6 +31,7 @@ def get_file_contents(filename):
         print("'%s' file not found" % filename)
 
 
+@st.cache_data(persist=True)
 def get_county_census(lat,lng,var_select):
     """
     use census API to query the census table

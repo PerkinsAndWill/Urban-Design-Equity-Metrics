@@ -3,6 +3,7 @@ import os
 import time
 from typing import List
 os.environ['USE_PYGEOS'] = '0'
+import streamlit as st
 import geopandas as gpd
 from shapely import geometry
 # import folium
@@ -88,6 +89,8 @@ def get_fips_code(lat, lng):
     county_name = data["County"]["name"]
     return state_fips,state_name, county_fips, county_name
 
+
+@st.cache_data(persist=True)
 def get_network(latitude, longitude, distance, network_type):
     """
     Pull network data from open street maps. Used for porosity with network_type='walk'
@@ -98,6 +101,7 @@ def get_network(latitude, longitude, distance, network_type):
     G = ox.project_graph(G)
     edges = ox.graph_to_gdfs(G, nodes=False, edges=True).reset_index()
     return edges
+
 
 def get_porosity(grid, network):
     """
@@ -163,6 +167,7 @@ def search_places_by_coordinate(key, location, radius, type, max_pages=20):
     return places
 
 
+@st.cache_data(persist=True)
 def get_all_retail_points(location, radius):
     """
     Invoke google api around a center for each location type in the retail file (list_retail.csv)
@@ -228,8 +233,8 @@ def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosi
     """
     spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
     area interpolation from blockgroups_df_equity to grid_df to get census_df: DONE
-    aggregate points_count by each grid: TODO
-    join census_df, porosity_df on grid_id:
+    aggregate points_count by each grid: DONE
+    join census_df, porosity_df on grid_id: DONE    
     dedupe: TODO
     output equity_grid_df
 
