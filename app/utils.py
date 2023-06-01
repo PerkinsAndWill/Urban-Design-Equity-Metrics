@@ -229,7 +229,7 @@ def get_point_density(grid_df, location_points, normalize=True):
     return density.tolist()
 
 
-def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosity: List, density:list, var_select=None):
+def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosity: List, retail:list, var_select=None):
     """
     spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
     area interpolation from blockgroups_df_equity to grid_df to get census_df: DONE
@@ -253,15 +253,17 @@ def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosi
 
     final_fishnet = area_interpolate(source_df, target_df, extensive_variables=var_select)
     
-    final_fishnet = final_fishnet.assign(porosity=porosity)
+    final_fishnet = final_fishnet.assign(Porosity=porosity)
 
-    final_fishnet = final_fishnet.assign(density=density)
+    final_fishnet = final_fishnet.assign(Retail=retail)
     
     return final_fishnet
 
 
-# Get Variable Code
 def get_acs_code(var_select,filepath = '../data/acs_variable_code.csv'):
+    """
+    Get Variable Code [ Deprecated ]
+    """
     acs_code_df = pd.read_csv(filepath)
     acs_dict = {}
     for i in range(len(acs_code_df)):
@@ -273,7 +275,6 @@ def get_acs_code(var_select,filepath = '../data/acs_variable_code.csv'):
     return tuple(code_list), acs_dict
 
 
-# read in census api key
 def get_file_contents(filename):
     """ Given a filename,
         return the contents of that file

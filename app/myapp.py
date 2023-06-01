@@ -6,7 +6,7 @@ os.environ['USE_PYGEOS'] = '0'
 
 from utils import get_point_density, create_grid, get_all_retail_points, get_fips_code, \
             enrich_grid, get_network, get_porosity, locations_to_geojson, \
-            get_county_census
+            get_county_census, acs_dict
 from streamlit_folium import folium_static
 import json
 
@@ -26,6 +26,10 @@ with st.sidebar:
     state_fips,state_name, county_fips, county_name = get_fips_code(lat, lng)
     st.write('The current coordinates is ', state_name, ', ', county_name)
 
+    # select viz
+    option = st.selectbox(label="Select layer to visualize:", options=[
+        *acs_dict.keys(), "Porosity", "Retail"
+    ])
 
 ########### CONSTRUCT STUDY AREA ##############
 
@@ -45,7 +49,7 @@ retail_locations = get_all_retail_points(location=f"{lat}, {lng}", radius=800)
 #     retail_locations = json.load(f)
 locations_geojson = locations_to_geojson(retail_locations)
 print("retail ok")
-density = get_point_density(grid_df, retail_locations, normalize=True)
+retail_density = get_point_density(grid_df, retail_locations, normalize=False)
 
 # POROSITY DATA
 network = get_network(lat, lng, distance=800, network_type="walk")
@@ -57,7 +61,7 @@ porosity = get_porosity(grid_df, network)
 #PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
 
 ########### ENRICH GRID #################
-final_grid = enrich_grid(grid_df, df_county_census, porosity, density)
+final_grid = enrich_grid(grid_df, df_county_census, porosity, retail_density)
 
 ########### DISPLAY MAP ##################
 # Load the GeoJSON file
@@ -69,33 +73,36 @@ geojson_data = json.loads(final_grid.to_json())
 m = folium.Map(location=[lat, lng], zoom_start=14, tiles='CartoDB positron')
 
 # Add the GeoJSON data to the map as a GeoJSON layer
-options=['density']
-max_opt = max([feature['properties'][options[0]] for feature in geojson_data['features']])
+max_opt = max([feature['properties'][option] for feature in geojson_data['features']])
+min_opt = min([feature['properties'][option] for feature in geojson_data['features']])
 
-folium.GeoJson(network, style_function=lambda feature: {
-    'color': 'blue',
-    'weight': '0.5',
-    'opacity': 0.2
-}).add_to(m)
+if option == "Porosity":
+    folium.GeoJson(network, style_function=lambda feature: {
+        'color': 'blue',
+        'weight': '0.5',
+        'opacity': 0.2
+    }).add_to(m)
 
-folium.GeoJson(locations_geojson, marker=folium.CircleMarker(
-    radius = 2, 
-    weight = 0, #outline weight
-    fill_color = 'red', 
-    fill_opacity = 0.2
-)).add_to(m)
+if option == "Retail":
+    folium.GeoJson(locations_geojson, marker=folium.CircleMarker(
+        radius = 2, 
+        weight = 0, #outline weight
+        fill_color = 'red', 
+        fill_opacity = 0.2
+    )).add_to(m)
 
 folium.GeoJson(geojson_data, style_function=lambda feature:{
-    'color': '#999999',
+    'color': '#222222',
     'weight': '0.5',
+    'opacity': 0.2,
     'fillColor': 'red',
-    'fillOpacity': 0.8 * feature['properties'][options[0]]/max_opt
+    'fillOpacity': 0.8 * feature['properties'][option]/max_opt
     }
 ).add_to(m)
 
 colormap = branca.colormap.LinearColormap(colors=[(255, 0, 0, 0), (255, 0, 0, int(255*0.8))], 
-            vmin=0.0, vmax=1.0, tick_labels=[0, 0.2, 0.4, 0.6, 0.8])
-colormap.caption = 'legend placeholder'
+            vmin=min_opt, vmax=max_opt)  # , tick_labels=[0, 0.2, 0.4, 0.6, 0.8]
+colormap.caption = option
 colormap.add_to(m)
 
 # Display the map in Streamlit
