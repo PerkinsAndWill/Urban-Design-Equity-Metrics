@@ -4,7 +4,7 @@ import branca
 import os
 os.environ['USE_PYGEOS'] = '0'
 
-from utils import get_point_density, create_grid, get_all_retail_points, get_fips_code, \
+from utils import get_point_density, create_grid, get_all_places, get_fips_code, \
             enrich_grid, get_network, get_porosity, locations_to_geojson, \
             get_county_census, acs_dict
 from streamlit_folium import folium_static
@@ -29,7 +29,7 @@ with st.sidebar:
 
     # select viz
     option = st.selectbox(label="Select layer to visualize:", options=[
-        *acs_dict.keys(), "Porosity", "Retail"
+        *acs_dict.keys(), "Porosity", "Retail", "Transit"
     ])
 
 ########### CONSTRUCT STUDY AREA ##############
@@ -47,10 +47,15 @@ print(f"\ncall to census completed in {time.time()-time0:.2f} seconds\n")
 
 time0 = time.time()
 # GET RETAILS AND TRANSIT STOPS
-retail_locations = get_all_retail_points(location=f"{lat}, {lng}", radius=800)
+retail_locations = get_all_places(location=f"{lat}, {lng}", radius=800, category="retail")
 print(f"\ncall to retail (Google API) completed in {time.time()-time0:.2f} seconds\n")
-locations_geojson = locations_to_geojson(retail_locations)
+retail_geojson = locations_to_geojson(retail_locations)
 retail_density = get_point_density(grid_df, retail_locations, normalize=False)
+
+transit_locations = get_all_places(location=f"{lat}, {lng}", radius=800, category="transit")
+print(f"\ncall to transit (Google API) completed in {time.time()-time0:.2f} seconds\n")
+transit_geojson = locations_to_geojson(transit_locations)
+transit_density = get_point_density(grid_df, transit_locations, normalize=False)
 
 # POROSITY DATA
 time0 = time.time()
@@ -67,7 +72,7 @@ print(f"\ntotal network processing completed in {time.time()-time0:.2f} seconds\
 #PCT_MINORITY = POPULATION_NON-WHITE/TOTAL_POPULATION
 
 ########### ENRICH GRID #################
-final_grid = enrich_grid(grid_df, df_county_census, porosity, retail_density)
+final_grid = enrich_grid(grid_df, df_county_census, porosity, retail_density, transit_density)
 
 ########### DISPLAY MAP ##################
 # Load the GeoJSON file
@@ -82,20 +87,21 @@ m = folium.Map(location=[lat, lng], zoom_start=15, tiles='CartoDB positron')
 max_opt = max([feature['properties'][option] for feature in geojson_data['features']])
 min_opt = min([feature['properties'][option] for feature in geojson_data['features']])
 
+for map_data, metric in zip([retail_geojson, transit_geojson], ["Retail", "Transit"]):
+    if option == metric:
+        folium.GeoJson(map_data, marker=folium.CircleMarker(
+            radius = 2, 
+            weight = 0, #outline weight
+            fill_color = 'red', 
+            fill_opacity = 0.2
+        )).add_to(m)
+
 if option == "Porosity":
     folium.GeoJson(network, style_function=lambda feature: {
         'color': 'blue',
         'weight': '0.5',
         'opacity': 0.2
     }).add_to(m)
-
-if option == "Retail":
-    folium.GeoJson(locations_geojson, marker=folium.CircleMarker(
-        radius = 2, 
-        weight = 0, #outline weight
-        fill_color = 'red', 
-        fill_opacity = 0.2
-    )).add_to(m)
 
 folium.GeoJson(geojson_data, style_function=lambda feature:{
     'color': '#222222',

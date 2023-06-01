@@ -13,10 +13,8 @@ import numpy as np
 from census import Census
 import pygris
 
-# import libpysal
 import collections.abc
 collections = collections.abc
-#collections.Iterable = collections.abc.Iterable
 from tobler.area_weighted import area_interpolate
 
 ox.config(log_console=True, use_cache=True)
@@ -169,13 +167,14 @@ def search_places_by_coordinate(key, location, radius, type, max_pages=20):
 
 
 @st.cache_data(persist=True)
-def get_all_retail_points(location, radius):
+def get_all_places(location, radius, category):
     """
     Invoke google api around a center for each location type in the retail file (list_retail.csv)
 
     Args:
         location (str): 'latitude, longitude' center for the search
         radius (str): radius for the places search
+        category (str): on of ["retail", "transit"]
     Returns:
         List[Dict {'coordinates': [lon, lat], 'type': str}] 
     """
@@ -185,19 +184,19 @@ def get_all_retail_points(location, radius):
         key = f.readline().strip()
 
     # load retail list
-    with open("../data/list_retail.csv", "r") as f:
-        retail_list = [line.strip() for line in f]
+    with open(f"../data/list_{category}.csv", "r") as f:
+        category_list = [line.strip() for line in f]
 
     # call google api and store results
-    retail_points = []
-    for retail in retail_list:
+    category_points = []
+    for retail in category_list:
         places = search_places_by_coordinate(key, location, radius, retail)
         for p in places:
             point = {'coordinates': [p['geometry']['location']['lng'], p['geometry']['location']['lat']],
                         'type': retail}
-            retail_points.append(point)
+            category_points.append(point)
 
-    return retail_points
+    return category_points
 
 
 def locations_to_geojson(locations):
@@ -231,7 +230,8 @@ def get_point_density(_grid_df, location_points, normalize=True):
     return density.tolist()
 
 
-def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosity: List, retail:list, var_select=None):
+def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosity: List, retail:list, 
+                    transit: list, var_select=None):
     """
     spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
     area interpolation from blockgroups_df_equity to grid_df to get census_df: DONE
@@ -256,8 +256,8 @@ def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosi
     final_fishnet = area_interpolate(source_df, target_df, extensive_variables=var_select)
     
     final_fishnet = final_fishnet.assign(Porosity=porosity)
-
     final_fishnet = final_fishnet.assign(Retail=retail)
+    final_fishnet = final_fishnet.assign(Transit=transit)
     
     return final_fishnet
 
