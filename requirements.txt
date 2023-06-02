@@ -6,3 +6,4 @@ geopandas
 googlemaps
 tobler
 osmnx
+scikit-learn
