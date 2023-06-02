@@ -9,6 +9,7 @@ from shapely import geometry
 import pandas as pd
 import requests
 import osmnx as ox
+import networkx as nx
 import numpy as np
 from census import Census
 import pygris
@@ -96,9 +97,9 @@ def get_network(latitude, longitude, distance, network_type):
     location_point = (latitude,longitude)
     G = ox.graph_from_point(location_point, dist=distance, dist_type='bbox', 
             network_type= network_type, simplify=True)
-    G = ox.project_graph(G)
-    edges = ox.graph_to_gdfs(G, nodes=False, edges=True).reset_index()
-    return edges
+    GP = ox.project_graph(G)
+    edges = ox.graph_to_gdfs(GP, nodes=False, edges=True).reset_index()
+    return G, edges
 
 
 @st.cache_data(persist=True)
@@ -334,6 +335,55 @@ def get_county_census(lat,lng):
     acs_gdf = county_tiger.merge(acs_df, on='GEOID', how='inner')
 
     return acs_gdf
+
+
+def make_iso_poly(G, lat, lng, trip_time=10, speed=4.5, edge_buff=25, node_buff=50, infill=False):
+    """
+    source: http://kuanbutts.com/2017/12/16/osmnx-isochrones/
+
+    Args:
+        G (osmnx graph): travel routes
+        trip_time (float): threshold time in min
+        speed (float) : travel speed in kmph
+    """
+
+    # find center
+    # gdf_nodes = ox.graph_to_gdfs(G, edges=False)
+    # x, y = gdf_nodes['geometry'].unary_union.centroid.xy
+    G = ox.project_graph(G, to_crs='epsg:4326')  # , to_crs="EPSG:3857")4326
+    center_node = ox.distance.nearest_nodes(G, lng, lat)
+
+    # add travel time info to graph
+    meters_per_minute = speed * 1000 / 60
+    for u, v, k, data in G.edges(data=True, keys=True):
+        data['time'] = data['length'] / meters_per_minute
+
+    subgraph = nx.ego_graph(G, center_node, radius=trip_time, distance='time')
+
+    node_points = [geometry.Point(data['x'], data['y']) for node, data in subgraph.nodes(data=True)]
+    node_points.append(geometry.Point(lat, lng))
+    # nodes_gdf = gpd.GeoDataFrame({'id': subgraph.nodes()}, geometry=node_points)
+    # nodes_gdf = nodes_gdf.set_index('id')
+    nodes_gdf = gpd.GeoDataFrame(geometry=node_points)
+
+    # edge_lines = []
+    # for n_fr, n_to in subgraph.edges():
+    #     f = nodes_gdf.loc[n_fr].geometry
+    #     t = nodes_gdf.loc[n_to].geometry
+    #     edge_lines.append(geometry.LineString([f,t]))
+
+    # n = nodes_gdf.buffer(node_buff).geometry
+    # e = gpd.GeoSeries(edge_lines).buffer(edge_buff).geometry
+    # all_gs = list(n) + list(e)
+    # new_iso = gpd.GeoSeries(all_gs).unary_union
+    
+    # If desired, try and "fill in" surrounded
+    # areas so that shapes will appear solid and blocks
+    # won't have white space inside of them
+    if infill:
+        new_iso = geometry.Polygon(new_iso.exterior)
+    # return json.loads(gpd.GeoSeries(new_iso).to_json()), subgraph
+    return json.loads(nodes_gdf.to_json())
 
 
 acs_dict = {

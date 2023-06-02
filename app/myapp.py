@@ -6,10 +6,11 @@ os.environ['USE_PYGEOS'] = '0'
 
 from utils import get_point_density, create_grid, get_all_places, get_fips_code, \
             enrich_grid, get_network, get_porosity, locations_to_geojson, \
-            get_county_census, acs_dict
+            get_county_census, make_iso_poly, acs_dict
 from streamlit_folium import folium_static
 import json
 import time
+import osmnx as ox
 
 ## set up title, header
 st.title("Urban Design Equity Metrics Dashboard")
@@ -59,8 +60,11 @@ transit_density = get_point_density(grid_df, transit_locations, normalize=False)
 
 # POROSITY DATA
 time0 = time.time()
-network = get_network(lat, lng, distance=800, network_type="walk")
+network_graph, network = get_network(lat, lng, distance=800, network_type="walk")
 print(f"\ncall to network (OSM) completed in {time.time()-time0:.2f} seconds\n")
+# iso_poly, iso_graph = make_iso_poly(network_graph)
+# iso_net = ox.graph_to_gdfs(iso_graph, nodes=False, edges=True).reset_index()
+iso_points = make_iso_poly(network_graph, lat, lng)
 
 network = network.to_crs(grid_df.crs)
 network = network.overlay(grid_df, how="intersection")
@@ -103,7 +107,26 @@ if option == "Porosity":
         'opacity': 0.2
     }).add_to(m)
 
-folium.GeoJson(geojson_data, style_function=lambda feature:{
+    folium.GeoJson(iso_points, marker=folium.CircleMarker(
+            radius = 3, 
+            weight = 0, #outline weight
+            fill_color = 'green', 
+            fill_opacity = 1.0
+        )).add_to(m)
+
+    # folium.GeoJson(iso_poly, style_function=lambda feature: {
+    #     'color': 'blue',
+    #     'weight': 0.5,
+    #     'fillOpacity': 0.0
+    # }).add_to(m)
+
+    # folium.GeoJson(iso_graph, style_function=lambda feature: {
+    #     'color': 'green',
+    #     'weight': '2',
+    #     'opacity': 1.0
+    # }).add_to(m)
+
+folium.GeoJson(geojson_data, style_function=lambda feature: {
     'color': '#222222',
     'weight': '0.5',
     'opacity': 0.2,
