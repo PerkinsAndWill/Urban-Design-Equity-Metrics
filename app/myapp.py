@@ -62,9 +62,8 @@ transit_density = get_point_density(grid_df, transit_locations, normalize=False)
 time0 = time.time()
 network_graph, network = get_network(lat, lng, distance=800, network_type="walk")
 print(f"\ncall to network (OSM) completed in {time.time()-time0:.2f} seconds\n")
-# iso_poly, iso_graph = make_iso_poly(network_graph)
-# iso_net = ox.graph_to_gdfs(iso_graph, nodes=False, edges=True).reset_index()
-iso_points = make_iso_poly(network_graph, lat, lng)
+iso_poly, iso_graph, iso_points = make_iso_poly(network_graph, lat, lng)
+iso_net = ox.graph_to_gdfs(iso_graph, nodes=False, edges=True).reset_index()
 
 network = network.to_crs(grid_df.crs)
 network = network.overlay(grid_df, how="intersection")
@@ -102,29 +101,33 @@ for map_data, metric in zip([retail_geojson, transit_geojson], ["Retail", "Trans
 
 if option == "Porosity":
     folium.GeoJson(network, style_function=lambda feature: {
-        'color': 'blue',
-        'weight': '0.5',
+        'color': '#222222',
+        'weight': 0.5,
+        'opacity': 0.1
+    }).add_to(m)
+
+    folium.GeoJson(iso_net, style_function=lambda feature: {
+        'color': '#222222',
+        'weight': 0.8,
         'opacity': 0.2
     }).add_to(m)
 
-    folium.GeoJson(iso_points, marker=folium.CircleMarker(
-            radius = 3, 
-            weight = 0, #outline weight
-            fill_color = 'green', 
-            fill_opacity = 1.0
-        )).add_to(m)
+    # folium.GeoJson(iso_points, marker=folium.CircleMarker(
+    #         radius = 3, 
+    #         weight = 0, #outline weight
+    #         fill_color = 'green', 
+    #         fill_opacity = 1.0
+    #     )).add_to(m)
 
-    # folium.GeoJson(iso_poly, style_function=lambda feature: {
-    #     'color': 'blue',
-    #     'weight': 0.5,
-    #     'fillOpacity': 0.0
-    # }).add_to(m)
+    folium.GeoJson(iso_poly, style_function=lambda feature: {
+        'color': '#222222',
+        'weight': 2.0,
+        'opacity': 0.3,
+        'fillColor': '#444444',
+        'fillOpacity': 0.15
+    }).add_to(m)
 
-    # folium.GeoJson(iso_graph, style_function=lambda feature: {
-    #     'color': 'green',
-    #     'weight': '2',
-    #     'opacity': 1.0
-    # }).add_to(m)
+
 
 folium.GeoJson(geojson_data, style_function=lambda feature: {
     'color': '#222222',

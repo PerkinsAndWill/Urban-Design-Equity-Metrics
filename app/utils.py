@@ -337,7 +337,8 @@ def get_county_census(lat,lng):
     return acs_gdf
 
 
-def make_iso_poly(G, lat, lng, trip_time=10, speed=4.5, edge_buff=25, node_buff=50, infill=False):
+@st.cache_data(persist=True)
+def make_iso_poly(_G, lat, lng, trip_time=10, speed=4.5, edge_buff=40, node_buff=40, infill=True):
     """
     source: http://kuanbutts.com/2017/12/16/osmnx-isochrones/
 
@@ -348,42 +349,47 @@ def make_iso_poly(G, lat, lng, trip_time=10, speed=4.5, edge_buff=25, node_buff=
     """
 
     # find center
-    # gdf_nodes = ox.graph_to_gdfs(G, edges=False)
-    # x, y = gdf_nodes['geometry'].unary_union.centroid.xy
-    G = ox.project_graph(G, to_crs='epsg:4326')  # , to_crs="EPSG:3857")4326
-    center_node = ox.distance.nearest_nodes(G, lng, lat)
+    _G = ox.project_graph(_G, to_crs='epsg:4326')
+    center_node = ox.distance.nearest_nodes(_G, lng, lat)
 
     # add travel time info to graph
     meters_per_minute = speed * 1000 / 60
-    for u, v, k, data in G.edges(data=True, keys=True):
+    for u, v, k, data in _G.edges(data=True, keys=True):
         data['time'] = data['length'] / meters_per_minute
 
-    subgraph = nx.ego_graph(G, center_node, radius=trip_time, distance='time')
+    subgraph = nx.ego_graph(_G, center_node, radius=trip_time, distance='time')
 
-    node_points = [geometry.Point(data['x'], data['y']) for node, data in subgraph.nodes(data=True)]
-    node_points.append(geometry.Point(lat, lng))
-    # nodes_gdf = gpd.GeoDataFrame({'id': subgraph.nodes()}, geometry=node_points)
-    # nodes_gdf = nodes_gdf.set_index('id')
-    nodes_gdf = gpd.GeoDataFrame(geometry=node_points)
+    node_points = [geometry.Point((data['x'], data['y'])) for node, data in subgraph.nodes(data=True)]
+    nodes_gdf = gpd.GeoDataFrame({'id': subgraph.nodes()}, geometry=node_points)
+    nodes_gdf = nodes_gdf.set_index('id')
 
-    # edge_lines = []
-    # for n_fr, n_to in subgraph.edges():
-    #     f = nodes_gdf.loc[n_fr].geometry
-    #     t = nodes_gdf.loc[n_to].geometry
-    #     edge_lines.append(geometry.LineString([f,t]))
+    edge_lines = []
+    for n_fr, n_to in subgraph.edges():
+        f = nodes_gdf.loc[n_fr].geometry
+        t = nodes_gdf.loc[n_to].geometry
+        edge_lines.append(geometry.LineString([f,t]))
 
-    # n = nodes_gdf.buffer(node_buff).geometry
-    # e = gpd.GeoSeries(edge_lines).buffer(edge_buff).geometry
-    # all_gs = list(n) + list(e)
-    # new_iso = gpd.GeoSeries(all_gs).unary_union
+    nodes_gdf.set_crs("EPSG:4326", inplace=True)
+    edges_gdf = gpd.GeoSeries(edge_lines, crs="EPSG:4326")
+    # convert to meters to process buffer
+    nodes_gdf = nodes_gdf.to_crs("EPSG:3857")
+    edges_gdf = edges_gdf.to_crs("EPSG:3857")
+    n = nodes_gdf.buffer(node_buff).geometry
+    e = edges_gdf.buffer(edge_buff).geometry
+    # convert back to plot properly
+    n = n.to_crs("EPSG:4326")
+    e = e.to_crs("EPSG:4326")
+    nodes_gdf = nodes_gdf.to_crs("EPSG:4326")
+
+    all_gs = list(n) + list(e)
+    new_iso = gpd.GeoSeries(all_gs).unary_union
     
     # If desired, try and "fill in" surrounded
     # areas so that shapes will appear solid and blocks
     # won't have white space inside of them
     if infill:
         new_iso = geometry.Polygon(new_iso.exterior)
-    # return json.loads(gpd.GeoSeries(new_iso).to_json()), subgraph
-    return json.loads(nodes_gdf.to_json())
+    return json.loads(gpd.GeoSeries(new_iso).to_json()), subgraph, json.loads(nodes_gdf.to_json())
 
 
 acs_dict = {
