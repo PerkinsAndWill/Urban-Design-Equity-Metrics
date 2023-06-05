@@ -7,10 +7,17 @@ os.environ['USE_PYGEOS'] = '0'
 from utils import get_point_density, create_grid, get_all_places, get_fips_code, \
             enrich_grid, get_network, get_porosity, locations_to_geojson, \
             get_county_census, make_iso_poly, acs_dict
-from streamlit_folium import folium_static
+from streamlit_folium import folium_static, st_folium
 import json
 import time
 import osmnx as ox
+
+
+if 'center' not in st.session_state:
+    st.session_state['center'] = 37.78737, -122.39505
+
+# lat, lng = st.session_state['center']
+
 
 ## set up title, header
 st.title("Urban Design Equity Metrics Dashboard")
@@ -19,12 +26,15 @@ st.title("Urban Design Equity Metrics Dashboard")
 ########### INPUT SECTION ##############
 ##### Sidebar
 
-
 # user input lat, lng
 with st.sidebar:
     st.markdown("#### Input Latitude and Longitude of your Interested Neighborhood")
-    lat= st.number_input('Insert Latitude', value=37.78737)
-    lng = st.number_input('Insert Longitude', value=-122.39505)
+    _lat= st.number_input('Insert Latitude', value=37.78737)
+    _lng = st.number_input('Insert Longitude', value=-122.39505)
+    if st.button('Recompute for user coordinates'):
+        # lat, lng = 
+        st.session_state['center'] = _lat, _lng
+    lat, lng = st.session_state['center']
     state_fips,state_name, county_fips, county_name = get_fips_code(lat, lng)
     st.write('The current coordinates is ', state_name, ', ', county_name)
 
@@ -112,13 +122,6 @@ if option == "Porosity":
         'opacity': 0.2
     }).add_to(m)
 
-    # folium.GeoJson(iso_points, marker=folium.CircleMarker(
-    #         radius = 3, 
-    #         weight = 0, #outline weight
-    #         fill_color = 'green', 
-    #         fill_opacity = 1.0
-    #     )).add_to(m)
-
     folium.GeoJson(iso_poly, style_function=lambda feature: {
         'color': '#222222',
         'weight': 2.0,
@@ -126,7 +129,6 @@ if option == "Porosity":
         'fillColor': '#444444',
         'fillOpacity': 0.15
     }).add_to(m)
-
 
 
 folium.GeoJson(geojson_data, style_function=lambda feature: {
@@ -144,21 +146,26 @@ colormap.caption = option
 colormap.add_to(m)
 
 # Display the map in Streamlit
-folium_static(m)
+# folium_static(m)
+st_f_data = st_folium(m, height=600, width=700)
+
+# write current coords to state
+def update_map_center():
+    st.session_state.center = st_f_data['center']['lat'], st_f_data['center']['lng']
+
+with st.sidebar:
+    if 'center' in st_f_data:
+        st.markdown(f"\n#### The map is currently centered at: \n{st_f_data['center']['lat']:.2f}, " +
+                f"{st_f_data['center']['lng']:.2f}")
+    st.button("Recompute for current position", key="update_center",
+        on_click=update_map_center)
 
 ########### DOWNLOAD DATA ##############
 with st.expander("See Dataframe"):
     st.write('PLACESHOLDER TO SHOW DATAFRAME')
 
-@st.cache_data
-def convert_df(_df):
-    # IMPORTANT: Cache the conversion to prevent computation on every rerun
-    return _df.to_json()
-
-download_json = convert_df(grid_df)
-
 st.download_button(
     label="Download data as GeoJSON",
-    data=download_json,
+    data=final_grid.to_json(),
     file_name='grid_df.geojson'
 )
