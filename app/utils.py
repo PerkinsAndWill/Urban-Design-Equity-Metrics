@@ -231,7 +231,8 @@ def get_point_density(_grid_df, location_points, normalize=True):
     return density.tolist()
 
 
-def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosity: List, retail:list, 
+@st.cache_data(persist=True)
+def enrich_grid(_target_df: gpd.GeoDataFrame, _source_df: gpd.GeoDataFrame, porosity: List, retail:list, 
                     transit: list, var_select=None):
     """
     spatial join grid_df with blockgroups_df_equity, select blockgroups within study area
@@ -252,9 +253,9 @@ def enrich_grid(target_df: gpd.GeoDataFrame, source_df: gpd.GeoDataFrame, porosi
     if var_select is None:
         var_select = list(acs_dict.keys())
 
-    source_df = source_df.to_crs(target_df.crs)
+    _source_df = _source_df.to_crs(_target_df.crs)
 
-    final_fishnet = area_interpolate(source_df, target_df, extensive_variables=var_select)
+    final_fishnet = area_interpolate(_source_df, _target_df, extensive_variables=var_select)
     
     final_fishnet = final_fishnet.assign(Porosity=porosity)
     final_fishnet = final_fishnet.assign(Retail=retail)
